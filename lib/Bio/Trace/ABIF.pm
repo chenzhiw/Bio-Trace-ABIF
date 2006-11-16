@@ -34,7 +34,7 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -1515,8 +1515,8 @@ sub sample_score {
 
 =head2 num_medium_quality_bases()
 
-  Usage    : my $n = num_medium_quality_bases($min_qv, $max_qv, $start, $stop);
-             my $n = num_medium_quality_bases($min_qv, $max_qv);
+  Usage    : my $n = $ab->num_medium_quality_bases($min_qv, $max_qv, $start, $stop);
+             my $n = $ab->num_medium_quality_bases($min_qv, $max_qv);
   Returns  : the number of bases in the range [$start, $stop], or in the whole
              sequence if no range is specified, with $min_qv <= quality value <= $max_qc;
              -1 if the information needed to compute such value is missing.
@@ -1560,8 +1560,8 @@ sub num_medium_quality_bases {
 
 =head2 num_high_quality_bases()
 
-  Usage    : my $n = num_high_quality_bases($threshold, $start, $stop);
-             my $n = num_high_quality_bases($threshold);
+  Usage    : my $n = $ab->num_high_quality_bases($threshold, $start, $stop);
+             my $n = $ab->num_high_quality_bases($threshold);
   Returns  : the number of bases in the range [$start, $stop], or in the whole
              sequence if no range is specified, with quality value >= $threshold;
              -1 if the information needed to compute such value is missing.
@@ -1604,8 +1604,8 @@ sub num_high_quality_bases {
 
 =head2 num_low_quality_bases()
 
-  Usage    : my $n = num_low_quality_bases($threshold, $start, $stop);
-             my $n = num_low_quality_bases($threshold);
+  Usage    : my $n = $ab->num_low_quality_bases($threshold, $start, $stop);
+             my $n = $ab->num_low_quality_bases($threshold);
   Returns  : the number of bases in the range [$start, $stop], or in the whole
              sequence if no range is specified, with quality value <= $threshold;
              -1 if the information needed to compute such value is missing.
@@ -1646,10 +1646,99 @@ sub num_low_quality_bases {
 	return $n;
 }
 
+=head2 contiguous_read_length()
+
+  Usage    : my ($crl_start, $crl_stop) = $ab->contiguous_read_length();
+             my ($crl_start, $crl_stop) =
+                $ab->contiguous_read_length($windowWidth, $quality_threshold)
+  Returns  : the beginning and ending position of the CRL (Contiguous Read Length)
+
+The CRL is (the length of) the longest uninterrupted stretch in a read such that
+the average quality of any interval of $windowWidth bases (20 by default) that
+is inside such stretch never goes below $threshold (20 by default). The threshold
+must be at least 10. The ends of the CRL are further trimmed until there are no bases
+with quality values less than 10 within the first five and the last five bases.
+The positions are counted from zero. If there is more than one CRL, the position
+of the first one is reported.
+
+=cut
+
+sub contiguous_read_length {
+	my $self = shift;
+	my $window_width = 20;
+	$window_width = shift if (@_);
+	my $qv_threshold = 20;
+	$qv_threshold = shift if (@_);
+	
+	my $qv_ref = $self->quality_values_ref();
+	my $N = scalar(@$qv_ref);
+	return (0, 0) if ($N < $window_width);
+	my $crl = 0; # 1 if we are inside a crl, 0 otherwise
+	my $start = 0;
+	my $new_start = 0;
+	my $stop = 0;
+	my $threshold = $window_width * $qv_threshold;
+	my $q = 0;
+	my $i;
+	for ($i = 0; $i < $window_width; $i++) {
+		$q += $$qv_ref[$i];
+	}
+	$crl = 1 if ($q >= $threshold);
+	while ($i < $N) {
+		$q -= $$qv_ref[$i - $window_width];
+		$q += $$qv_ref[$i];
+		if ($crl and $q < $threshold) {
+			$crl = 0;
+			if ($stop - $start < $i - $new_start - 1) {
+				$start = $new_start;
+				$stop = $i - 1;
+			}
+		}
+		elsif ( (not $crl) and $q >= $threshold) {
+			$crl = 1;
+			$new_start = $i - $window_width + 1;
+		}
+		$i++;
+	}
+	if ($crl and $stop - $start < $N - $new_start - 1) {
+		$start = $new_start;
+		$stop = $N - 1;
+	}
+	my $j = 0;
+	while ($start + 4 <= $stop and ($j < 5)) { # Trim the beginning
+		 if ($$qv_ref[$start + $j] < 10) {
+		 	$start += $j + 1;
+		 	$j = 0;
+		 }
+		 else {
+		 	$j++;
+		 }
+	}
+	$j = 0;
+	while ($start + 4 <= $stop and ($j < 5)) { # Trim the end
+		if ($$qv_ref[$stop - $j] < 10) {
+			$stop -= ($j + 1);
+			$j = 0;
+		}
+		else {
+			$j++;
+		}
+	}
+	if ($stop - $start < 4) {
+		for (my $k = $start; $k <= $stop; $k++) {
+			if ($$qv_ref[$k] < 10) {
+				return (0, 0);
+			}
+		}
+	}
+	return ($start, $stop);
+}
+
+
 =head2 length_of_read()
 
-  Usage    : my $LOR = length_of_read($windowWidth, $quality_threshold);
-             my $LOR = length_of_read($windowWidth, $quality_threshold, $method);
+  Usage    : my $LOR = $ab->length_of_read($windowWidth, $quality_threshold);
+             my $LOR = $ab->length_of_read($windowWidth, $quality_threshold, $method);
   Returns  : the Length Of Read (LOR) value, computed using a window of
              $windowWidth bases, a threshold equal to $quality_threshold and,
              optionally, according to the specified $method

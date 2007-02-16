@@ -30,7 +30,7 @@ SKIP: {
 	is($DirEntry{DATA_ITEM}, pack('H*', '41264433'), 'data item');
 
 	my ($v) = $ab->get_data_item('SPAC', 3, 'B32');
-	$v = $ab->_ieee_single_prec_float($v);
+	$v = $ab->_ieee2decimal($v);
 	ok( ($v >= 10.39 and $v <= 10.4), 'parsing float');
 
 	($v) = $ab->get_data_item('LANE', 1, 'n');

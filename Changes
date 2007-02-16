@@ -7,3 +7,25 @@ Revision history for Bio-Trace-ABIF
         Added method to compute CRL (Contiguous Read Length).
         A few bugs fixed in the documentation.
 
+1.00    2007-02-16/12:30
+        - contiguous_read_length() has now mandatory arguments. Trimming the
+          ends is now optional.
+        - Added methods to read all the ab1 file tags specified by the ABIF
+          format, including fsa tags.
+        - Added method write_tag() to overwrite existing data.
+        - Methods returning a scalar now return 'undef' in case of error
+          (e.g., tags not found).
+        - Signed shorts and longs are correctly unpacked.
+        - Methods sorted alphabetically.
+        - Fixed a version mismatch.
+        - Fized a bug in sample_score() occasionally causing division by zero.
+          Also, sample_score() in some cases returned negative values: this has
+          been fixed, too.
+        - Changed the semantics of clear_range_start() and clear_range_stop():
+          both methods return -1 if no clear range exists.
+        - Fixed bugs in clear_range_start() and clear_range_stop() that would
+          cause an error in some (very unfortunate) cases.
+        - Added clear_range() method, which returns an interval (start, stop).
+        - Much faster conversion from binary to floats.
+        - Fixed a bug in analysis_protocol_xml()
+        

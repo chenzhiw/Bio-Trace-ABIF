@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Bio-Trace-ABIF
-version:             1.00
+version:             1.01
 abstract:            Perl extension for reading and parsing ABIF (Applied
 license:             ~
 generated_by:        ExtUtils::MakeMaker version 6.31

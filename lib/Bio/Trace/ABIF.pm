@@ -10,11 +10,11 @@ Biosystems, Inc. Format) files
        
 =head1 VERSION
 
-Version 1.00
+Version 1.01
 
 =cut
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 =head1 SYNOPSIS
 
@@ -768,17 +768,21 @@ This data item is from SeqScape(R) v2.5 and Sequencing Analysis v5.2 Software.
 
 sub analyzed_data_for_channel {
 	my ($self, $channel_number) = @_;
+	if ($channel_number == 5) {
+		$channel_number = 205;
+	}
+	else {
+		$channel_number += 8;
+	}
+	if ($channel_number < 9 or
+		($channel_number > 12 and $channel_number != 205)) {
+		return ();	
+	}
 	my $key = '_DATA' . $channel_number;
 	unless (defined $self->{$key}) {
-		if ($channel_number > 0 and $channel_number <= 5) {
-			$channel_number = 197 if ($channel_number == 5);
-			my @data = map { ($_ < $SHORT_MID) ? $_ : $_ - $SHORT_MAX }
-				$self->get_data_item('DATA', $channel_number + 8, 'n*');
-			$self->{$key} = (@data) ? [ @data ] : [ ];
-		}
-		else {
-			$self->{$key} = [ ];
-		}
+		my @data = map { ($_ < $SHORT_MID) ? $_ : $_ - $SHORT_MAX }
+			$self->get_data_item('DATA', $channel_number, 'n*');
+		$self->{$key} = (@data) ? [ @data ] : [ ];
 	}
 	return @{$self->{$key}};
 }
@@ -2511,18 +2515,20 @@ An optional channel number 5 exists in some files.
 
 sub  raw_data_for_channel {
 	my ($self, $channel_number) = @_;
+	if ($channel_number == 5) {
+		$channel_number = 105;
+	}
+	if ($channel_number < 1 or
+		($channel_number > 5 and $channel_number != 105)) {
+		return ();	
+	}
 	my $k = '_DATA' . $channel_number;
 	unless (defined $self->{$k}) {
-		if ($channel_number > 0 and $channel_number <= 5) {
-			$channel_number = 105 if ($channel_number == 5);
-			my @data = map { ($_ < $SHORT_MID) ? $_ : $_ - $SHORT_MAX }
-				$self->get_data_item('DATA', $channel_number, 'n*');
-			$self->{$k} = (@data) ? [ @data ] : [ ];
-		}
-		else {
-			$self->{$k} = [ ];
-		}
+		my @data = map { ($_ < $SHORT_MID) ? $_ : $_ - $SHORT_MAX }
+			$self->get_data_item('DATA', $channel_number, 'n*');
+		$self->{$k} = (@data) ? [ @data ] : [ ];
 	}
+
 	return @{$self->{$k}};
 }
 
@@ -4442,14 +4448,14 @@ You are welcome at L<http://www.appliedgenomics.org>!
 
 Thanks to Simone Scalabrin for many helpful suggestions and for the first
 implementation of the C<length_of_read()> method the way Sequencing Analysis
-does it!
+does it! Thanks to Fabrizio Levorin for reporting bugs!
 
 Some explanation about how Sequencing Analysis computes some parameters has
 been found at L<http://keck.med.yale.edu/dnaseq/>.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 Nicola Vitacolonna, all rights reserved.
+Copyright 2006-2007 Nicola Vitacolonna, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.

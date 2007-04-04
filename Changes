@@ -8,8 +8,6 @@ Revision history for Bio-Trace-ABIF
         A few bugs fixed in the documentation.
 
 1.00    2007-02-16/12:30
-        - contiguous_read_length() has now mandatory arguments. Trimming the
-          ends is now optional.
         - Added methods to read all the ab1 file tags specified by the ABIF
           format, including fsa tags.
         - Added method write_tag() to overwrite existing data.
@@ -18,6 +16,8 @@ Revision history for Bio-Trace-ABIF
         - Signed shorts and longs are correctly unpacked.
         - Methods sorted alphabetically.
         - Fixed a version mismatch.
+        - contiguous_read_length() has now mandatory arguments. Trimming the
+          ends is now optional. The method returns (-1, -1) when no CRL exists.
         - Fized a bug in sample_score() occasionally causing division by zero.
           Also, sample_score() in some cases returned negative values: this has
           been fixed, too.
@@ -28,4 +28,9 @@ Revision history for Bio-Trace-ABIF
         - Added clear_range() method, which returns an interval (start, stop).
         - Much faster conversion from binary to floats.
         - Fixed a bug in analysis_protocol_xml()
+
+1.01    2007-04-03/18:05
+        - Fixed bug causing wrong return values from analyzed_data_for_channel()
+          and raw_data_for_channel() methods.
+
         

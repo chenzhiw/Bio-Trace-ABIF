@@ -10,11 +10,11 @@ Biosystems, Inc. Format) files
        
 =head1 VERSION
 
-Version 1.01
+Version 1.02
 
 =cut
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 =head1 SYNOPSIS
 
@@ -26,7 +26,8 @@ The data inside ABIF files is organized in records, in the following referred
 to as either I<directory entries> or I<data items>. Each data item is uniquely
 identified by a pair made of a four character string and a number: we call such
 pair a I<tag> and its components the I<tag name> and the I<tag number>,
-respectively.
+respectively. Tags are defined in the official documentation for ABIF files
+(see the L</"SEE ALSO"> Section at the end of this document).
 
 This module provides methods for accessing any data item contained into an ABIF
 file (with or without knowledge of the corresponding tag) and methods for
@@ -106,7 +107,13 @@ sub _module_version {
 	return $VERSION;
 }
 
+sub _endianness {
+	return ($IS_BIG_ENDIAN) ? 'big' : 'little';
+}
+
 =head1 CONSTRUCTOR
+
+Creates a new ABIF object.
 
 =head2 new()
 
@@ -131,7 +138,11 @@ sub new {
 	return $self;
 }
 
-=head1 GENERAL METHODS
+=head1 OPENING AND CLOSING ABIF FILES
+
+The methods in this section allow you to open an ABIF file
+(either read-only or for modification), to close it or
+to verify the ABIF format version number.
 
 =cut
 
@@ -145,7 +156,7 @@ sub new {
 Opens the specified file in binary format and checks whether it is in ABIF
 format. If the second optional argument is not false then the file is opened in
 read/write mode (by default, the file is opened in read only mode). Opening in
-read/write mode is mandatory if you want to use C<write_tag()> (see below).
+read/write mode is necessary only if you want to use C<write_tag()> (see below).
 
 =cut
 
@@ -295,6 +306,17 @@ sub abif_version {
 	}
 	return $self->{'_ABIF_VERSION'};
 }
+
+=head1 GENERAL METHODS
+
+The "low-level" methods of this section allow you to access
+any directory entry in a file. It is up to the caller to correctly
+interpret the values returned by these methods, so they should
+be used only if the caller knows what (s)he is doing. In any case, it is
+strongly recommended to use the accessor methods defined later
+in this document: in most cases, they will do just fine.
+
+=cut
 
 =head2 num_dir_entries()
 
@@ -469,6 +491,11 @@ sub get_data_item {
 	}	
 	return ();
 }
+
+=head1 SEARCHING AND OVERWRITING DATA
+
+The methods in this section allow you to search for a specific tag
+and to overwrite existing data corresponding to a given tag.
 
 =head2 search_tag()
 
@@ -745,8 +772,10 @@ sub write_tag {
 
 =head1 ACCESSOR METHODS
 
-The following methods can be used to retrieve specific information from a file
-without having to specify a tag name and a tag number.
+The methods in this section can be used to retrieve specific
+information from a file without having to specify a tag.
+It is strongly recommended that you read data from a file
+by using one or more of these methods.
 
 =head2 analyzed_data_for_channel()
 
@@ -1044,15 +1073,17 @@ sub base_locations_edited {
 =head2 base_order()
 
   Usage     : @bo = $abif->base_order();
-  Returns   : The base order;
+  Returns   : An array of characters sorted by channel number;
               () if the data item is not in the file.
   ABIF Tag  : FWO_1
   ABIF Type : char array
   File Type : ab1
 
-Returns an array of characters whose order specifies the order in which the
-bases are stored in the file. For example, if the list is C<('G', 'A', 'T', 'C')>
-then G is the first base, A the second, and so on.
+Returns an array of characters sorted by increasing channel number.
+For example, if the list is C<('G', 'A', 'T', 'C')>
+then G is channel 1, A is channel 2, and so on. If you want to do
+the opposite, that is, mapping bases to their channels, use C<order_base()>
+instead. See also the C<channel()> method.
 
 =cut
 
@@ -1134,6 +1165,27 @@ sub capillary_number {
 			$self->get_data_item('LANE', 1, 'n');
 	}
 	return $self->{'_LANE1'};
+}
+
+=head2 channel()
+
+  Usage     : $n = $abif->channel($base);
+  Returns   : The channel number corresponding to a given base.
+              undef if the data item is not in the file.
+              
+Returns the channel number corresponding to the given base.
+
+The possible values for C<$base> are 'A', 'C', 'G' and 'T' (case insensitive).
+
+=cut
+sub channel {
+	my $self = shift;
+	my $base = shift;
+	my %ob = ();
+	
+	$base =~ /^[ACGTacgt]$/ or return undef;
+	%ob = $self->order_base();
+	return $ob{uc($base)};
 }
 
 =head2 chem()
@@ -2155,7 +2207,7 @@ sub offscale_peaks {
 		my (@bytes) = $self->get_data_item('OffS', $n, 'C*');
 		$self->{$t} = (@bytes) ? [ @bytes ] : [ ];
 	}\
-	return $self->{$t};
+	return @{$self->{$t}};
 }
 
 
@@ -2186,12 +2238,13 @@ sub offscale_scans {
 =head2 order_base()
 
   Usage     : %bases = $abif->order_base();
-  Returns   : The indices of the bases;
+  Returns   : A mapping of the four bases to their channel numbers;
               () if the base order is not in the file.
   File Type : ab1
 
-Returns the indices of the bases, as they stored in the file. This method does
-the opposite as base_order() does. 
+Returns the channel numbers corresponding to the bases.
+This method does the opposite as C<base_order()> does.
+See also the C<channel()> method.
   
 =cut
 
@@ -2201,11 +2254,11 @@ sub order_base {
 		my @bo = $self->base_order();
 		my %ob = ();
 		for (my $i = 0; $i < scalar(@bo); $i++) {
-			$ob{$bo[$i]} = $i;
+			$ob{$bo[$i]} = $i+1;
 		}
-		$self->{'_OB'} = ( %ob );
+		$self->{'_OB'} = { %ob };
 	}
-	return $self->{'_OB'};
+	return %{$self->{'_OB'}};
 }
 
 =head2 peak1_location()
@@ -2541,18 +2594,15 @@ sub  raw_data_for_channel {
   
 The possible values for C<$base> are 'A', 'C', 'G' and 'T' (case insensitive).
 
-This method is equivalent to
-
-  $abif->raw_data_for_channel($abif->order_base($base) + 1);
-
 =cut
 
 sub raw_trace {
 	my ($self, $base) = @_;
+	my %ob = ();
 	
 	$base =~ /^[ACGTacgt]$/ or return ();
-	$base = uc($base);
-	return $self->raw_data_for_channel($self->order_base($base) + 1);
+	%ob = $self->order_base();
+	return $self->raw_data_for_channel($ob{uc($base)});
 }
 
 =head2 rescaling()
@@ -3460,10 +3510,11 @@ The possible values for C<$base> are 'A', 'C', 'G' and 'T'.
 
 sub trace {
 	my ($self, $base) = @_;
+	my %ob = ();
 	
 	$base =~ /^[ACGTacgt]$/ or return ();
-	$base = uc($base);
-	return $self->analyzed_data_for_channel($self->order_base($base) + 1);
+	%ob = $self->order_base();
+	return $self->analyzed_data_for_channel($ob{uc($base)});
 }
 
 =head2 trim_probability_threshold()
@@ -4448,17 +4499,20 @@ You are welcome at L<http://www.appliedgenomics.org>!
 
 Thanks to Simone Scalabrin for many helpful suggestions and for the first
 implementation of the C<length_of_read()> method the way Sequencing Analysis
-does it! Thanks to Fabrizio Levorin for reporting bugs!
+does it (and for rating this module five stars)!
+Thanks to Fabrizio Levorin and other people reporting bugs!
 
 Some explanation about how Sequencing Analysis computes some parameters has
 been found at L<http://keck.med.yale.edu/dnaseq/>.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006-2007 Nicola Vitacolonna, all rights reserved.
+Copyright 2006-2008 Nicola Vitacolonna, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.
+
+Feel free to rate this module on CPAN!
 
 =cut
 

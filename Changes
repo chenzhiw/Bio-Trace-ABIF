@@ -27,10 +27,20 @@ Revision history for Bio-Trace-ABIF
           cause an error in some (very unfortunate) cases.
         - Added clear_range() method, which returns an interval (start, stop).
         - Much faster conversion from binary to floats.
-        - Fixed a bug in analysis_protocol_xml()
+        - Fixed a bug in analysis_protocol_xml().
 
 1.01    2007-04-03/18:05
         - Fixed bug causing wrong return values from analyzed_data_for_channel()
           and raw_data_for_channel() methods.
 
-        
+1.02   2008-12-17/18:42
+        - Fixed a bug in order_base(), raw_trace() and trace() methods.
+          WARNING!
+          Note that the semantics of order_base() has changed! Now, the method
+          returns the channel number, not the array index (to avoid off-by-one
+          errors when using this method with other methods requiring a channel
+          as a parameter).
+        - Fixed a bug in offscale_peaks().
+        - Added a channel() method, returning the channel number corresponding
+          to a given base.
+        - Slightly improved documentation.

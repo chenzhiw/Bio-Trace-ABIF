@@ -14,7 +14,7 @@ Version 1.02
 
 =cut
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
 
 =head1 SYNOPSIS
 
@@ -103,7 +103,14 @@ our %PACK_TMPL = (
 	'rect' => 'nnnn', 'vPoint' => 'NN', 'vRect' => 'NNNN', 'tag' => 'NN'
 );
 
-sub _module_version {
+=head2 module_version()
+
+  Usage    : $version = Bio::Trace::ABIF->module_version();
+  Returns  : This module's version number.
+  
+=cut
+
+sub module_version {
 	return $VERSION;
 }
 
@@ -196,9 +203,7 @@ sub open_abif {
 		map { ($_ < $LONG_MID) ? $_ : $_ - $LONG_MAX } unpack('Nx4N', $bytes);
 		
 	# Cache tags positions
-	$self->_scan_tags();
-	
-	return 1;
+	return $self->_scan_tags();
 }
 
 # Performs a linear scan of the file,
@@ -210,9 +215,15 @@ sub _scan_tags {
 	$self->{'_TAG_INDEX'} = { };
 	do {
 		my $offset = $self->{'_DATAOFFSET'} + ($DIR_SIZE * $i);
-		seek($self->{'_FH'}, $offset, 0);
+		unless (seek($self->{'_FH'}, $offset, 0)) {
+			carp "IO Error (wrong offset within file)";
+			return 0;
+		}
 		# Read Tag name and number (8 bytes)
-		read($self->{'_FH'}, $field, 8);
+		unless (read($self->{'_FH'}, $field, 8)) {
+			carp "IO Error (failed to read tag index)";
+			return 0;
+		}
 		($tag_name, $tag_number) = unpack('A4N', $field);
 		$tag_number -= $LONG_MAX if ($tag_number >= $LONG_MID);
 		${$self->{'_TAG_INDEX'}}{$tag_name . $tag_number} = $offset;
@@ -220,7 +231,7 @@ sub _scan_tags {
 	}
 	while ($i < $self->{'_NUMELEM'});  
 
-	return;
+	return 1;
 }
 
 =head2 close_abif()
@@ -2332,6 +2343,54 @@ sub peak_area_ratio {
 	return $self->{'_phAR1'};
 }
 
+=head2 peaks()
+
+  Usage     : @pks = $abif->peaks(1);
+  Returns   : An array of peak hashes. Each peak hash contains the following attributes:
+              'position', 'height', 'beginPos', 'endPos', 'beginHI', 'endHI', 
+              'area', 'volume', 'fragSize', 'isEdited', 'label';
+              () if the data item is not in the file.
+            
+  ABIF Tag  : PEAK
+  ABIF Type : user-defined structure
+  File Type : fsa
+
+Returns the data associated with PEAK data structures.
+
+=cut
+
+sub peaks {
+	my ($self, $n) = @_;
+	my $k = '_PEAK' . $n;
+	my ($position, $height, $beginPos, $endPos, $beginHI, $endHI, $area, $volume, $fragSize, $isEdited, $label);
+	my $s = undef;
+	my @raw_data;
+	my @peak_array;
+	my $i;
+	
+	unless (defined $self->{$k}) {
+		@raw_data = $self->get_data_item('PEAK', $n, '(NnNNnnNNB32nZ64)*');
+		for ($i = 0; $i < @raw_data; $i += 11) {
+			($position, $height, $beginPos, $endPos, $beginHI, $endHI, $area, $volume, $s, $isEdited, $label) = @raw_data[$i .. $i+10];
+			$fragSize = $self->_ieee2decimal($s) if (defined $s);
+			my $peak = {};
+			$peak->{position} = $position;
+			$peak->{height} = $height;
+			$peak->{beginPos} = $beginPos;
+			$peak->{endPos} = $endPos;
+			$peak->{beginHI} = $beginHI;
+			$peak->{endHI} = $endHI;
+			$peak->{area} = $area;
+			$peak->{volume} = $volume;
+			$peak->{fragSize} = $fragSize;
+			$peak->{isEdited} = $isEdited;
+			$peak->{label} = $label;
+			push @peak_array, $peak;
+		}
+	$self->{$k} = (@peak_array) ? [ @peak_array ] : [ ];
+	}
+	return @{$self->{$k}};
+}
 
 =head2 pixel_bin_size()
 

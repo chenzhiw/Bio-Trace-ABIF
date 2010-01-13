@@ -44,3 +44,12 @@ Revision history for Bio-Trace-ABIF
         - Added a channel() method, returning the channel number corresponding
           to a given base.
         - Slightly improved documentation.
+
+1.03   2010-01-13/18:58
+        - open_abif() returns 0 when it opens a file whose directory index is
+          corrupted, instead of producing lots of error messages (bug reported
+          by Malcolm Cook).
+        - Added method peaks() to get the detected peaks from the sample results
+          window in GeneScan (including size, peak height, and peak area).
+          Kindly provided by Jason Gilder (and by one of his students!)
+        - Method module_version() is now public.

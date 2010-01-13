@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 15;
+use Test::More tests => 16;
 use Bio::Trace::ABIF;
 
 my $ab = Bio::Trace::ABIF->new();
@@ -42,5 +42,11 @@ SKIP: {
 	}
 }
 
+SKIP: {
+	skip('Cannot find test_broken.ab1 test file', 1)
+		unless (-e 'test_broken.ab1');
+		
+	ok(!$ab->open_abif('test_broken.ab1'), 'opening broken file fails gracefully')
+}
 
 exit;

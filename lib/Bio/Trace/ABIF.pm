@@ -14,7 +14,7 @@ Version 1.02
 
 =cut
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 =head1 SYNOPSIS
 
@@ -4566,7 +4566,7 @@ been found at L<http://keck.med.yale.edu/dnaseq/>.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006-2008 Nicola Vitacolonna, all rights reserved.
+Copyright 2006-2010 Nicola Vitacolonna, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.

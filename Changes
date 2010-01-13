@@ -53,3 +53,6 @@ Revision history for Bio-Trace-ABIF
           window in GeneScan (including size, peak height, and peak area).
           Kindly provided by Jason Gilder (and by one of his students!)
         - Method module_version() is now public.
+        
+1.04   2010-01-13/19:49
+        - Fixed copyright notice in ABIF.pm.

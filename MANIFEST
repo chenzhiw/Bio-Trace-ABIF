@@ -4,6 +4,7 @@ MANIFEST
 Makefile.PL
 README
 test.ab1
+test_broken.ab1
 lib/Bio/Trace/ABIF.pm
 t/00-load.t
 t/abif.t

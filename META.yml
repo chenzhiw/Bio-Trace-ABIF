@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Bio-Trace-ABIF
-version:            1.04
+version:            1.05
 abstract:           Perl extension for reading and parsing ABIF (Applied
 author:
     - Nicola Vitacolonna <vitacolonna@appliedgenomics.org>

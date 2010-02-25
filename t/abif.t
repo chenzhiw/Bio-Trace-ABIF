@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 16;
+use Test::More tests => 23;
 use Bio::Trace::ABIF;
 
 my $ab = Bio::Trace::ABIF->new();
@@ -15,11 +15,11 @@ SKIP: {
 	# three directory entries
 	ok($ab->open_abif('test.ab1'), 'opening test file');
 	ok($ab->is_abif_open());
-	is($ab->num_dir_entries(), 3, 'number of dir entries');
+	is($ab->num_dir_entries(), 4, 'number of dir entries');
 	is($ab->data_offset(), 32, 'data offset');
 
 	# Test reading a directory entry
-	my %DirEntry = $ab->get_directory('SPAC', 3, 'reading a directory');
+	%DirEntry = $ab->get_directory('SPAC', 3, 'reading a directory');
 	is($DirEntry{TAG_NAME}, 'SPAC', 'tag name');
 	is($DirEntry{TAG_NUMBER}, 3, 'tag number');
 	is($DirEntry{ELEMENT_TYPE}, 'float', 'element type');
@@ -27,7 +27,17 @@ SKIP: {
 	is($DirEntry{NUM_ELEMENTS}, 1, 'number of elements');
 	is($DirEntry{DATA_SIZE}, 4, 'data size');
 	is($DirEntry{DATA_ITEM}, pack('H*', '41264433'), 'data item');
-
+	
+	# Test reading a directory entry with data size > 4
+	my %DirEntry = $ab->get_directory('PBAS', 1, 'reading a directory with large data');
+	is($DirEntry{TAG_NAME}, 'PBAS', 'tag name');
+	is($DirEntry{TAG_NUMBER}, 1, 'tag number');
+	is($DirEntry{ELEMENT_TYPE}, 'char', 'element type');
+	is($DirEntry{ELEMENT_SIZE}, 1, 'element size');
+	is($DirEntry{NUM_ELEMENTS}, 7, 'number of elements');
+	is($DirEntry{DATA_SIZE}, 7, 'data size');
+	is(unpack("A*", $DirEntry{DATA_ITEM}), 'TCGGAGC', 'data item');
+	
 	# Test unpacking floating numbers
 	my ($v) = $ab->get_data_item('SPAC', 3, 'B32');
 	$v = $ab->_ieee2decimal($v);

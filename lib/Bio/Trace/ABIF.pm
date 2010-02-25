@@ -10,11 +10,11 @@ Biosystems, Inc. Format) files
        
 =head1 VERSION
 
-Version 1.02
+Version 1.05
 
 =cut
 
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 =head1 SYNOPSIS
 
@@ -431,7 +431,7 @@ sub get_directory {
 		if ($DirEntry{DATA_SIZE} > 4) {
 		 	# The data item position is given by the data offset field
 		 	read($self->{'_FH'}, $field, 4);
-		 	$field = map { ($_ < $LONG_MID) ? $_ : $_ - $LONG_MAX }
+		 	($field) = map { ($_ < $LONG_MID) ? $_ : $_ - $LONG_MAX }
 		 		unpack('N', $field);
 			seek($self->{'_FH'}, $field, 0);
 			read($self->{'_FH'}, $raw_data, $DirEntry{DATA_SIZE});
